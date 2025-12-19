@@ -1,0 +1,1549 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AI Clicker</title>
+  <style>
+    :root{
+      --bg:#0b1220; --panel:#111a2e; --text:#e7ecff; --muted:#9aa6d6;
+      --accent:#6aa7ff; --accent2:#7dffb2; --danger:#ff6a6a;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, #13244a 0%, var(--bg) 55%) fixed;
+      color:var(--text);
+      min-height:100vh;
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+    }
+    .wrap{width:min(980px, 100%); display:grid; gap:18px; grid-template-columns: 1.3fr .9fr;}
+    @media (max-width: 860px){ .wrap{grid-template-columns:1fr;} }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      padding:18px;
+    }
+
+    .title{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:0 0 10px 0;
+      color:#f1f4ff;
+      font-size:20px;
+    }
+    .badge{
+      font-size:12px;
+      font-weight:800;
+      padding:4px 8px;
+      border-radius:999px;
+      background: rgba(106,167,255,.18);
+      border: 1px solid rgba(106,167,255,.35);
+      color:#dbe7ff;
+      letter-spacing:.3px;
+      line-height:1;
+      user-select:none;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .badge.new{
+      background: rgba(125,255,178,.14);
+      border: 1px solid rgba(125,255,178,.35);
+      color:#d9ffe9;
+    }
+
+    .muted{color:var(--muted); font-size:14px}
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+    .stats{
+      display:grid; grid-template-columns: repeat(3, 1fr);
+      gap:12px; margin-top:12px;
+    }
+    @media (max-width: 520px){ .stats{grid-template-columns:1fr;} }
+    .stat{
+      padding:12px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 14px;
+    }
+    .stat .label{color:var(--muted); font-size:12px}
+    .stat .value{font-size:20px; margin-top:2px}
+    .big{
+      display:flex; align-items:center; justify-content:center;
+      padding:24px;
+      min-height: 220px;
+      position:relative;
+      overflow:hidden;
+    }
+    .clickBtn{
+      width:min(340px, 100%);
+      aspect-ratio: 1.9 / 1;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: radial-gradient(700px 220px at 30% 20%, rgba(106,167,255,.35), rgba(17,26,46,.9));
+      color: var(--text);
+      font-size: 22px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 34px rgba(0,0,0,.35);
+      transition: transform .06s ease, filter .15s ease;
+      user-select:none;
+    }
+    .clickBtn:active{ transform: scale(.98); filter: brightness(1.08); }
+    .spark{
+      position:absolute; inset:auto; pointer-events:none;
+      font-weight:700; color: var(--accent2);
+      text-shadow: 0 6px 16px rgba(0,0,0,.35);
+      animation: floatUp .75s ease-out forwards;
+    }
+    @keyframes floatUp{
+      0%{ transform: translate(-50%, -10%) scale(.95); opacity:0; }
+      10%{opacity:1}
+      100%{ transform: translate(-50%, -80%) scale(1.06); opacity:0; }
+    }
+
+    .shop{display:flex; flex-direction:column; gap:10px}
+    .item{
+      display:flex; justify-content:space-between; gap:12px; align-items:center;
+      padding:12px;
+      background: rgba(0,0,0,.16);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 14px;
+    }
+    .item strong{display:block; font-size:14px}
+    .item span{display:block; font-size:12px; color:var(--muted); margin-top:2px}
+    .btn{
+      border:none;
+      border-radius: 12px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-weight:700;
+      color:#071122;
+      background: linear-gradient(180deg, rgba(106,167,255,1), rgba(92,146,255,1));
+      box-shadow: 0 10px 24px rgba(0,0,0,.25);
+      min-width: 110px;
+    }
+    .btn:disabled{
+      cursor:not-allowed;
+      opacity:.45;
+      filter: grayscale(.2);
+      box-shadow:none;
+    }
+    .btn.alt{background: linear-gradient(180deg, rgba(125,255,178,1), rgba(88,214,143,1));}
+    .btn.danger{background: linear-gradient(180deg, rgba(255,106,106,1), rgba(230,78,78,1)); color:#26090a;}
+    .foot{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:10px}
+    code{background: rgba(255,255,255,.06); padding:2px 6px; border-radius: 8px; border:1px solid rgba(255,255,255,.08)}
+
+    .overlay{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.62);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index: 9999;
+    }
+    .hidden{display:none}
+    .modal{width:min(560px, 100%)}
+
+    /* only for "must login first" lock */
+    body.locked .wrap{
+      pointer-events:none;
+      user-select:none;
+      filter: blur(2px);
+      opacity:.35;
+    }
+
+    .field{
+      width:100%;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.15);
+      background: rgba(0,0,0,.22);
+      color: var(--text);
+      outline:none;
+    }
+
+    /* --- Announcements UI --- */
+    .annBlock{
+      margin-top:14px;
+      padding-top:14px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .annHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .annList{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:10px;
+    }
+    .annItem{
+      cursor:pointer;
+      padding:12px;
+      border-radius:14px;
+      background: rgba(0,0,0,.16);
+      border: 1px solid rgba(255,255,255,.07);
+      transition: filter .15s ease;
+    }
+    .annItem:hover{ filter: brightness(1.06); }
+    .annTop{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .annTitle{font-size:14px; font-weight:800; color:#f1f4ff}
+    .annMeta{font-size:12px; color:var(--muted)}
+    .annBody{
+      margin-top:6px;
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.35;
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+    .annActions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+  </style>
+</head>
+
+<body class="locked">
+  <div class="wrap">
+    <section class="card">
+      <h1 class="title">
+        <span id="appName">AI Clicker</span>
+        <span id="appVersion" class="badge" title="App version">v</span>
+      </h1>
+
+      <div class="muted" id="descText">Click, buy upgrades, and the game saves automatically!</div>
+
+      <div class="big card" style="margin-top:14px;">
+        <button id="clickBtn" class="clickBtn">CLICK</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="label" id="lblPoints">Points</div>
+          <div class="value" id="points">0</div>
+        </div>
+        <div class="stat">
+          <div class="label" id="lblPpc">Per click</div>
+          <div class="value" id="ppc">1</div>
+        </div>
+        <div class="stat">
+          <div class="label" id="lblPps">Per second</div>
+          <div class="value" id="pps">0</div>
+        </div>
+      </div>
+
+      <div class="foot">
+        <div>
+          <div class="muted" id="saveInfo">Save: ready</div>
+          <div class="muted" id="antiCheatInfo">Anti-cheat: OK</div>
+          <div class="muted" id="versionInfo">Version: —</div>
+          <div class="muted" id="userInfo">User: —</div>
+        </div>
+        <div class="row">
+          <button id="exportBtn" class="btn alt" title="Copy save to clipboard">Export</button>
+          <button id="importBtn" class="btn alt" title="Paste save from clipboard">Import</button>
+          <button id="langBtn" class="btn alt" title="Change language">Language</button>
+          <button id="logoutBtn" class="btn alt" title="Log out">Log out</button>
+          <button id="resetBtn" class="btn danger">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card">
+      <h1 class="title" id="shopTitle">Shop</h1>
+      <div class="muted" id="shopSubtitle">Prices increase after each purchase.</div>
+
+      <div class="shop" style="margin-top:12px;">
+        <div class="item">
+          <div>
+            <strong id="uClickName">Better click</strong>
+            <span id="uClickDesc">+1 to "Per click". Level: <b id="lvlClick">0</b> • Cost: <b id="costClick">10</b></span>
+          </div>
+          <button id="buyClick" class="btn">Buy</button>
+        </div>
+
+        <div class="item">
+          <div>
+            <strong id="uAutoName">Autoclicker</strong>
+            <span id="uAutoDesc">+1/s. Amount: <b id="lvlAuto">0</b> • Cost: <b id="costAuto">25</b></span>
+          </div>
+          <button id="buyAuto" class="btn">Buy</button>
+        </div>
+
+        <div class="item">
+          <div>
+            <strong id="uMultName">Multiplier</strong>
+            <span id="uMultDesc">x1.25 to everything. Level: <b id="lvlMult">0</b> • Cost: <b id="costMult">100</b></span>
+          </div>
+          <button id="buyMult" class="btn">Buy</button>
+        </div>
+      </div>
+
+      <div class="muted" id="hotkeysText" style="margin-top:14px; line-height:1.5">
+        Shortcuts: <code>Space</code> = click, <code>S</code> = shop (buy first available), <code>R</code> = reset (with confirmation).
+      </div>
+
+      <!-- Announcements -->
+      <div class="annBlock">
+        <div class="annHead">
+          <div class="row" style="gap:8px">
+            <strong id="annTitle" style="font-size:14px">Announcements</strong>
+            <span id="annNewBadge" class="badge new hidden" title="You have new announcements">NEW</span>
+          </div>
+          <div class="row">
+            <button id="annAddBtn" class="btn alt hidden" title="Only admin can add announcements">Add</button>
+          </div>
+        </div>
+
+        <div id="annList" class="annList"></div>
+
+        <div class="muted" id="annFooter" style="margin-top:10px">
+          Announcements are local to this browser (localStorage).
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- LANGUAGE overlay -->
+  <div id="langOverlay" class="overlay hidden" aria-hidden="true" style="z-index:12000">
+    <div class="modal card">
+      <h1 class="title" id="langTitle">Choose language</h1>
+      <div class="muted" id="langSubtitle" style="margin-bottom:12px">
+        Select a language to continue.
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <button id="langPl" class="btn alt" style="min-width:200px">Polski</button>
+        <button id="langEn" class="btn alt" style="min-width:200px">English</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGIN overlay -->
+  <div id="loginOverlay" class="overlay hidden" aria-hidden="true" style="z-index:10000">
+    <div class="modal card">
+      <h1 class="title" id="loginTitle">Login</h1>
+      <div class="muted" id="loginSubtitle" style="margin-bottom:10px">
+        Accounts are stored locally in your browser (localStorage). If the username doesn't exist, a new account will be created.
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <input id="loginUser" class="field" placeholder="Username" autocomplete="username" />
+      </div>
+      <div class="row" style="margin-top:10px">
+        <input id="loginPass" class="field" type="password" placeholder="Password" autocomplete="current-password" />
+      </div>
+
+      <div class="row" style="margin-top:12px; justify-content:space-between">
+        <button id="loginBtn" class="btn alt" style="min-width:180px">Login / Register</button>
+        <button id="loginLangBtn" class="btn alt" style="min-width:180px">Language</button>
+        <button id="wipeAccountsBtn" class="btn danger" style="min-width:180px" title="Deletes accounts in this browser">
+          Clear accounts
+        </button>
+      </div>
+
+      <div class="muted" id="loginHint" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- Announcements: VIEW overlay -->
+  <div id="annViewOverlay" class="overlay hidden" aria-hidden="true" style="z-index:10001">
+    <div class="modal card">
+      <h1 class="title" style="justify-content:space-between">
+        <span id="annViewHeading">Announcement</span>
+        <button id="annViewClose" class="btn danger" style="min-width:120px">Close</button>
+      </h1>
+      <div class="muted" id="annViewMeta" style="margin-bottom:10px"></div>
+      <div id="annViewTitle" style="font-size:18px; font-weight:900; margin-bottom:10px"></div>
+      <div id="annViewBody" class="muted" style="white-space:pre-wrap; line-height:1.5"></div>
+      <div class="annActions">
+        <button id="annMarkReadBtn" class="btn alt" style="min-width:220px">Mark as read</button>
+        <button id="annDeleteBtn" class="btn danger hidden" style="min-width:220px">Delete announcement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Announcements: ADD overlay -->
+  <div id="annAddOverlay" class="overlay hidden" aria-hidden="true" style="z-index:10002">
+    <div class="modal card">
+      <h1 class="title" style="justify-content:space-between">
+        <span id="annAddHeading">Add announcement</span>
+        <button id="annAddClose" class="btn danger" style="min-width:120px">Close</button>
+      </h1>
+      <div class="muted" id="annAddSubtitle" style="margin-bottom:10px">
+        Only the admin user can add. Stored in localStorage.
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <input id="annVer" class="field" placeholder="Version (e.g. 1.0.3)" />
+      </div>
+      <div class="row" style="margin-top:10px">
+        <input id="annTitleInput" class="field" placeholder="Announcement title" />
+      </div>
+      <div class="row" style="margin-top:10px">
+        <textarea id="annBodyInput" class="field" rows="6" placeholder="Announcement body (what's new, changes, etc.)"></textarea>
+      </div>
+
+      <div class="row" style="margin-top:12px; justify-content:space-between">
+        <button id="annPublishBtn" class="btn alt" style="min-width:200px">Publish</button>
+        <div class="muted" id="annAddHint"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Human check overlay -->
+  <div id="humanCheck" class="overlay hidden" aria-hidden="true">
+    <div class="modal card">
+      <h1 class="title" id="hcTitle">Verification</h1>
+      <div class="muted" id="hcSubtitle" style="margin-bottom:10px">
+        Unnatural clicking detected. Type the code to unlock clicking.
+      </div>
+      <div class="row" style="align-items:baseline">
+        <div style="font-size:22px; font-weight:800; letter-spacing:2px" id="hcCode">----</div>
+        <div class="muted" id="hcCodeLabel">code</div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <input id="hcInput" placeholder="Enter code…" autocomplete="off" class="field" />
+        <button id="hcBtn" class="btn alt" style="min-width:140px">Unlock</button>
+      </div>
+      <div class="muted" id="hcHint" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const clone = (o) => (typeof structuredClone === "function" ? structuredClone(o) : JSON.parse(JSON.stringify(o)));
+
+  // =========================
+  // CONFIG
+  // =========================
+  const APP_VERSION = "1.0.0";
+  const ADMIN_USERNAME = "TheBartvs";
+
+  const MAX_OFFLINE_SECONDS = 12 * 60 * 60;
+
+  const LANG_KEY = "ai_clicker_lang_v1";
+  const ACCOUNTS_KEY = "ai_clicker_accounts_v1";
+  const AUTH_KEY = "ai_clicker_auth_v1";
+  const SAVE_KEY_BASE = "ai_clicker_save_v1_user_";
+
+  const ANN_KEY = "ai_clicker_announcements_v1";
+  const ANN_MAX = 50;
+
+  // =========================
+  // STATE
+  // =========================
+  let lang = "";
+  let awaitingLangChoice = false;
+
+  let currentUser = null;
+  let tickTimer = null;
+  let lastAutoSave = 0;
+
+  const DEFAULT = {
+    points: 0,
+    clickLevel: 0,
+    autoLevel: 0,
+    multLevel: 0,
+    lastTick: Date.now(),
+    lastSeen: Date.now(),
+    lastReadAnnAt: 0
+  };
+  let state = clone(DEFAULT);
+
+  // =========================
+  // I18N
+  // =========================
+  const I18N = {
+    pl: {
+      appName: "AI Clicker",
+      desc: "Klikaj, kupuj ulepszenia oraz gierka zapisuje się automatycznie!",
+      clickBtn: "KLIKNIJ",
+      points: "Punkty",
+      ppc: "Za klik",
+      pps: "Na sekundę",
+
+      savePrefix: "Zapis",
+      antiPrefix: "Anti-cheat",
+      versionPrefix: "Wersja",
+      userPrefix: "Użytkownik",
+
+      export: "Eksport",
+      import: "Import",
+      logout: "Wyloguj",
+      reset: "Reset",
+      language: "Język",
+
+      shop: "Sklep",
+      shopSub: "Ceny rosną po każdym zakupie.",
+      buy: "Kup",
+      hotkeys: 'Skróty: <code>Spacja</code> = klik, <code>S</code> = sklep (kup pierwszy dostępny), <code>R</code> = reset (z potwierdzeniem).',
+
+      uClickName: "Lepszy klik",
+      uClickDesc: '+1 do "Za klik". Poziom: <b id="lvlClick">0</b> • Koszt: <b id="costClick">10</b>',
+      uAutoName: "Autoclicker",
+      uAutoDesc: '+1/s. Ilość: <b id="lvlAuto">0</b> • Koszt: <b id="costAuto">25</b>',
+      uMultName: "Mnożnik",
+      uMultDesc: 'x1.25 do wszystkiego. Poziom: <b id="lvlMult">0</b> • Koszt: <b id="costMult">100</b>',
+
+      langTitle: "Wybierz język",
+      langSub: "Wybierz język aby kontynuować.",
+
+      loginTitle: "Logowanie",
+      loginSub: "Konta są zapisane lokalnie w przeglądarce (localStorage). Jeśli nazwa użytkownika nie istnieje, zostanie utworzone nowe konto.",
+      loginUserPh: "Nazwa użytkownika",
+      loginPassPh: "Hasło",
+      loginBtn: "Zaloguj / Zarejestruj",
+      wipeBtn: "Wyczyść konta",
+
+      ann: "Ogłoszenia",
+      annNew: "NOWE",
+      annAdd: "Dodaj",
+      annFooter: "Ogłoszenia są lokalne dla tej przeglądarki (localStorage).",
+      annView: "Ogłoszenie",
+      close: "Zamknij",
+      markRead: "Oznacz jako przeczytane",
+      deleteAnn: "Usuń ogłoszenie",
+      annAddHeading: "Dodaj ogłoszenie",
+      annAddSub: "Tylko użytkownik admin może dodawać. To zapisuje się w localStorage.",
+      annVerPh: "Wersja (np. 1.0.3)",
+      annTitlePh: "Tytuł ogłoszenia",
+      annBodyPh: "Treść ogłoszenia (co nowego, zmiany itd.)",
+      publish: "Opublikuj",
+
+      hcTitle: "Weryfikacja",
+      hcSub: "Wykryto nienaturalnie szybkie lub zbyt równe klikanie. Przepisz kod, aby odblokować klikanie.",
+      hcCode: "kod",
+      hcPh: "Wpisz kod…",
+      unlock: "Odblokuj",
+
+      confirmReset: "Na pewno zresetować postęp?",
+      confirmWipe: "Na pewno usunąć WSZYSTKIE konta i zapisy z tej przeglądarki?",
+      confirmDeleteAnn: "Na pewno usunąć to ogłoszenie?",
+      alertImportFail: "Nie udało się zaimportować zapisu (zły format).",
+
+      loginNeedUser: "Podaj nazwę użytkownika.",
+      loginUserLen: "Nazwa użytkownika musi mieć min. 3 znaki.",
+      loginPassLen: "Hasło musi mieć min. 4 znaki.",
+      loginCreated: "Utworzono konto. Logowanie...",
+      loginBadPass: "Złe hasło.",
+      loginOk: "Zalogowano.",
+
+      antiOk: "OK",
+      antiLocked: "blokada",
+      antiSlow: "spowolnienie",
+
+      saveReady: "gotowy",
+      saveQueued: "w kolejce",
+      saveSaved: "zapisano",
+      saveErr: "błąd zapisu",
+      saveExported: "wyeksportowano",
+      saveExportedClipboard: "wyeksportowano do schowka",
+      saveImported: "zaimportowano",
+      saveImportFail: "import nieudany",
+      saveOffline: "offline",
+
+      noAnnouncements: "Brak ogłoszeń."
+    },
+    en: {
+      appName: "AI Clicker",
+      desc: "Click, buy upgrades, and the game saves automatically!",
+      clickBtn: "CLICK",
+      points: "Points",
+      ppc: "Per click",
+      pps: "Per second",
+
+      savePrefix: "Save",
+      antiPrefix: "Anti-cheat",
+      versionPrefix: "Version",
+      userPrefix: "User",
+
+      export: "Export",
+      import: "Import",
+      logout: "Log out",
+      reset: "Reset",
+      language: "Language",
+
+      shop: "Shop",
+      shopSub: "Prices increase after each purchase.",
+      buy: "Buy",
+      hotkeys: 'Shortcuts: <code>Space</code> = click, <code>S</code> = shop (buy first available), <code>R</code> = reset (with confirmation).',
+
+      uClickName: "Better click",
+      uClickDesc: '+1 to "Per click". Level: <b id="lvlClick">0</b> • Cost: <b id="costClick">10</b>',
+      uAutoName: "Autoclicker",
+      uAutoDesc: '+1/s. Amount: <b id="lvlAuto">0</b> • Cost: <b id="costAuto">25</b>',
+      uMultName: "Multiplier",
+      uMultDesc: 'x1.25 to everything. Level: <b id="lvlMult">0</b> • Cost: <b id="costMult">100</b>',
+
+      langTitle: "Choose language",
+      langSub: "Select a language to continue.",
+
+      loginTitle: "Login",
+      loginSub: "Accounts are stored locally in your browser (localStorage). If the username doesn't exist, a new account will be created.",
+      loginUserPh: "Username",
+      loginPassPh: "Password",
+      loginBtn: "Login / Register",
+      wipeBtn: "Clear accounts",
+
+      ann: "Announcements",
+      annNew: "NEW",
+      annAdd: "Add",
+      annFooter: "Announcements are local to this browser (localStorage).",
+      annView: "Announcement",
+      close: "Close",
+      markRead: "Mark as read",
+      deleteAnn: "Delete announcement",
+      annAddHeading: "Add announcement",
+      annAddSub: "Only the admin user can add. Stored in localStorage.",
+      annVerPh: "Version (e.g. 1.0.3)",
+      annTitlePh: "Announcement title",
+      annBodyPh: "Announcement body (what's new, changes, etc.)",
+      publish: "Publish",
+
+      hcTitle: "Verification",
+      hcSub: "Unnatural clicking detected. Type the code to unlock clicking.",
+      hcCode: "code",
+      hcPh: "Enter code…",
+      unlock: "Unlock",
+
+      confirmReset: "Reset progress?",
+      confirmWipe: "Delete ALL accounts and saves in this browser?",
+      confirmDeleteAnn: "Delete this announcement?",
+      alertImportFail: "Import failed (bad format).",
+
+      loginNeedUser: "Enter a username.",
+      loginUserLen: "Username must be at least 3 characters.",
+      loginPassLen: "Password must be at least 4 characters.",
+      loginCreated: "Account created. Logging in...",
+      loginBadPass: "Wrong password.",
+      loginOk: "Logged in.",
+
+      antiOk: "OK",
+      antiLocked: "locked",
+      antiSlow: "throttling",
+
+      saveReady: "ready",
+      saveQueued: "queued",
+      saveSaved: "saved",
+      saveErr: "save error",
+      saveExported: "exported",
+      saveExportedClipboard: "exported to clipboard",
+      saveImported: "imported",
+      saveImportFail: "import failed",
+      saveOffline: "offline",
+
+      noAnnouncements: "No announcements."
+    }
+  };
+
+  function t(key) {
+    const dict = I18N[lang] || I18N.en;
+    return (dict && key in dict) ? dict[key] : key;
+  }
+
+  // =========================
+  // BASIC HELPERS
+  // =========================
+  function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = (el.tagName || "").toUpperCase();
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+    if (el.isContentEditable) return true;
+    return false;
+  }
+  function anyOverlayOpen() {
+    return !!document.querySelector(".overlay:not(.hidden)");
+  }
+  function fmt(n) {
+    if (n < 10000) return Math.floor(n).toString();
+    const units = ["", "K", "M", "B", "T"];
+    let u = 0;
+    let x = n;
+    while (x >= 1000 && u < units.length - 1) { x /= 1000; u++; }
+    return (Math.floor(x * 10) / 10).toString() + units[u];
+  }
+  function escapeHtml(s) {
+    return String(s || "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+  function fmtDate(ts) {
+    try {
+      const d = new Date(ts);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mm = String(d.getMinutes()).padStart(2, "0");
+      return `${y}-${m}-${day} ${hh}:${mm}`;
+    } catch {
+      return "";
+    }
+  }
+
+  // =========================
+  // APPLY LANGUAGE (includes shop fix)
+  // =========================
+  function applyLang() {
+    document.documentElement.lang = lang || "en";
+
+    $("appVersion").textContent = "v" + APP_VERSION;
+
+    $("appName").textContent = t("appName");
+    $("descText").textContent = t("desc");
+    $("clickBtn").textContent = t("clickBtn");
+
+    $("lblPoints").textContent = t("points");
+    $("lblPpc").textContent = t("ppc");
+    $("lblPps").textContent = t("pps");
+
+    $("exportBtn").textContent = t("export");
+    $("importBtn").textContent = t("import");
+    $("logoutBtn").textContent = t("logout");
+    $("resetBtn").textContent = t("reset");
+    $("langBtn").textContent = t("language");
+
+    $("shopTitle").textContent = t("shop");
+    $("shopSubtitle").textContent = t("shopSub");
+    $("buyClick").textContent = t("buy");
+    $("buyAuto").textContent = t("buy");
+    $("buyMult").textContent = t("buy");
+    $("hotkeysText").innerHTML = t("hotkeys");
+
+    // shop items (names + descriptions)
+    $("uClickName").textContent = t("uClickName");
+    $("uAutoName").textContent = t("uAutoName");
+    $("uMultName").textContent = t("uMultName");
+    $("uClickDesc").innerHTML = t("uClickDesc");
+    $("uAutoDesc").innerHTML = t("uAutoDesc");
+    $("uMultDesc").innerHTML = t("uMultDesc");
+
+    // language overlay
+    $("langTitle").textContent = t("langTitle");
+    $("langSubtitle").textContent = t("langSub");
+
+    // login overlay
+    $("loginTitle").textContent = t("loginTitle");
+    $("loginSubtitle").textContent = t("loginSub");
+    $("loginUser").placeholder = t("loginUserPh");
+    $("loginPass").placeholder = t("loginPassPh");
+    $("loginBtn").textContent = t("loginBtn");
+    $("loginLangBtn").textContent = t("language");
+    $("wipeAccountsBtn").textContent = t("wipeBtn");
+
+    // announcements UI
+    $("annTitle").textContent = t("ann");
+    $("annNewBadge").textContent = t("annNew");
+    $("annAddBtn").textContent = t("annAdd");
+    $("annFooter").textContent = t("annFooter");
+
+    $("annViewHeading").textContent = t("annView");
+    $("annViewClose").textContent = t("close");
+    $("annMarkReadBtn").textContent = t("markRead");
+    $("annDeleteBtn").textContent = t("deleteAnn");
+
+    $("annAddHeading").textContent = t("annAddHeading");
+    $("annAddClose").textContent = t("close");
+    $("annAddSubtitle").textContent = t("annAddSub");
+    $("annVer").placeholder = t("annVerPh");
+    $("annTitleInput").placeholder = t("annTitlePh");
+    $("annBodyInput").placeholder = t("annBodyPh");
+    $("annPublishBtn").textContent = t("publish");
+
+    // human check
+    $("hcTitle").textContent = t("hcTitle");
+    $("hcSubtitle").textContent = t("hcSub");
+    $("hcCodeLabel").textContent = t("hcCode");
+    $("hcInput").placeholder = t("hcPh");
+    $("hcBtn").textContent = t("unlock");
+
+    $("versionInfo").textContent = `${t("versionPrefix")}: v${APP_VERSION}`;
+    document.title = `${t("appName")}: v${APP_VERSION}`;
+
+    // dynamic lines
+    setUserInfo();
+    setAntiInfo(anti.locked ? t("antiLocked") : t("antiOk"));
+  }
+
+  // =========================
+  // OVERLAYS
+  // =========================
+  function showOverlay(id) {
+    const el = $(id);
+    el.classList.remove("hidden");
+    el.setAttribute("aria-hidden", "false");
+  }
+  function hideOverlay(id) {
+    const el = $(id);
+    el.classList.add("hidden");
+    el.setAttribute("aria-hidden", "true");
+  }
+
+  function showLangOverlay() { showOverlay("langOverlay"); }
+  function hideLangOverlay() { hideOverlay("langOverlay"); }
+
+  function showLogin() {
+    document.body.classList.add("locked");
+    showOverlay("loginOverlay");
+    $("loginHint").textContent = "";
+    $("loginUser").focus();
+  }
+  function hideLogin() {
+    hideOverlay("loginOverlay");
+  }
+
+  // =========================
+  // AUTH
+  // =========================
+  function normalizeUsername(u) { return (u || "").trim(); }
+
+  function getAccounts() {
+    try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}") || {}; }
+    catch { return {}; }
+  }
+  function setAccounts(obj) {
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(obj));
+  }
+
+  async function hashPassword(pw) {
+    try {
+      if (crypto && crypto.subtle && typeof TextEncoder !== "undefined") {
+        const data = new TextEncoder().encode(pw);
+        const buf = await crypto.subtle.digest("SHA-256", data);
+        const bytes = new Uint8Array(buf);
+        let hex = "";
+        for (const b of bytes) hex += b.toString(16).padStart(2, "0");
+        return "sha256:" + hex;
+      }
+    } catch {}
+    return "b64:" + btoa(unescape(encodeURIComponent(pw)));
+  }
+
+  function saveAuth(username) {
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ username }));
+  }
+  function loadAuth() {
+    try {
+      const raw = localStorage.getItem(AUTH_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const u = normalizeUsername(parsed.username);
+      return u ? { username: u } : null;
+    } catch {
+      return null;
+    }
+  }
+  function clearAuth() {
+    localStorage.removeItem(AUTH_KEY);
+  }
+
+  function saveKeyForUser(username) {
+    return SAVE_KEY_BASE + encodeURIComponent(username);
+  }
+
+  // =========================
+  // STATUS LINES
+  // =========================
+  function setSaveInfo(msg) {
+    $("saveInfo").textContent = `${t("savePrefix")}: ${msg}`;
+  }
+  function setAntiInfo(msg) {
+    $("antiCheatInfo").textContent = `${t("antiPrefix")}: ${msg}`;
+  }
+  function setUserInfo() {
+    $("userInfo").textContent = `${t("userPrefix")}: ${currentUser ? currentUser : "—"}`;
+  }
+
+  // =========================
+  // GAME MATH
+  // =========================
+  function mult() { return Math.pow(1.25, state.multLevel); }
+  function ppc() { return (1 + state.clickLevel) * mult(); }
+  function pps() { return state.autoLevel * mult(); }
+
+  function costClick() { return Math.floor(10 * Math.pow(1.35, state.clickLevel)); }
+  function costAuto()  { return Math.floor(25 * Math.pow(1.45, state.autoLevel)); }
+  function costMult()  { return Math.floor(100 * Math.pow(1.75, state.multLevel)); }
+
+  function render() {
+    $("points").textContent = fmt(state.points);
+    $("ppc").textContent = fmt(ppc());
+    $("pps").textContent = fmt(pps());
+
+    // IDs exist (may be recreated on language switch)
+    $("lvlClick").textContent = state.clickLevel;
+    $("lvlAuto").textContent = state.autoLevel;
+    $("lvlMult").textContent = state.multLevel;
+
+    $("costClick").textContent = fmt(costClick());
+    $("costAuto").textContent = fmt(costAuto());
+    $("costMult").textContent = fmt(costMult());
+
+    $("buyClick").disabled = state.points < costClick();
+    $("buyAuto").disabled  = state.points < costAuto();
+    $("buyMult").disabled  = state.points < costMult();
+  }
+
+  function spark(text, x, y) {
+    const el = document.createElement("div");
+    el.className = "spark";
+    el.textContent = text;
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+    document.body.appendChild(el);
+    el.addEventListener("animationend", () => el.remove());
+  }
+
+  function addPoints(amount) {
+    state.points = Math.max(0, state.points + amount);
+  }
+
+  // =========================
+  // ANTI-CHEAT (same as before, shortened)
+  // =========================
+  const anti = {
+    times: [],
+    suspicion: 0,
+    locked: false,
+    code: "",
+    maxCps: 15,
+    hardCps: 20,
+    windowMs: 1200,
+    minIntervalMs: 45
+  };
+
+  function randCode() {
+    const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    let s = "";
+    for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
+    return s;
+  }
+
+  function unlockClicks() {
+    anti.locked = false;
+    anti.suspicion = 0;
+    anti.times = [];
+    setAntiInfo(t("antiOk"));
+    hideOverlay("humanCheck");
+    $("hcHint").textContent = "";
+    $("hcInput").value = "";
+  }
+
+  function lockClicks(reason) {
+    anti.locked = true;
+    anti.code = randCode();
+    setAntiInfo(`${t("antiLocked")} (${reason})`);
+    showOverlay("humanCheck");
+    $("hcCode").textContent = anti.code;
+    $("hcHint").textContent = "";
+    $("hcInput").value = "";
+    $("hcInput").focus();
+  }
+
+  function analyzeRegularity(ts) {
+    if (ts.length < 12) return { mean: Infinity, stdev: Infinity };
+    const intervals = [];
+    for (let i = 1; i < ts.length; i++) intervals.push(ts[i] - ts[i - 1]);
+    const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+    const varr = intervals.reduce((a, x) => a + (x - mean) * (x - mean), 0) / intervals.length;
+    return { mean, stdev: Math.sqrt(varr) };
+  }
+
+  function antiCheck(ev) {
+    if (anti.locked) return { allowed: false, mult: 0 };
+    const now = Date.now();
+
+    if (ev && ev.isTrusted === false) anti.suspicion += 2;
+
+    anti.times.push(now);
+    const cutoff = now - anti.windowMs;
+    while (anti.times.length && anti.times[0] < cutoff) anti.times.shift();
+
+    const cps = anti.times.length / (anti.windowMs / 1000);
+
+    if (anti.times.length >= 2) {
+      const dt = anti.times[anti.times.length - 1] - anti.times[anti.times.length - 2];
+      if (dt < anti.minIntervalMs) anti.suspicion += 2;
+    }
+
+    const { mean, stdev } = analyzeRegularity(anti.times);
+    if (mean < 260 && stdev < 6) anti.suspicion += 2;
+
+    if (cps > anti.maxCps) anti.suspicion += (cps - anti.maxCps) * 0.7;
+    if (cps > anti.hardCps) anti.suspicion += 5;
+
+    if (anti.suspicion >= 12) {
+      lockClicks(lang === "pl" ? "nienaturalne klikanie" : "unnatural clicking");
+      return { allowed: false, mult: 0 };
+    }
+
+    let m = 1;
+    if (cps > anti.maxCps) {
+      const t01 = Math.min(1, (cps - anti.maxCps) / (anti.hardCps - anti.maxCps));
+      m = Math.max(0.2, 1 - 0.8 * t01);
+      setAntiInfo(`${t("antiSlow")} (${cps.toFixed(1)} ${lang === "pl" ? "klik/s" : "clicks/s"})`);
+    } else {
+      setAntiInfo(t("antiOk"));
+    }
+
+    return { allowed: true, mult: m };
+  }
+
+  // =========================
+  // SAVE/LOAD (per user) + offline
+  // =========================
+  let saveTimer = null;
+
+  function getSaveKey() {
+    return currentUser ? saveKeyForUser(currentUser) : null;
+  }
+
+  function save() {
+    const key = getSaveKey();
+    if (!key) return;
+    try {
+      state.lastSeen = Date.now();
+      localStorage.setItem(key, JSON.stringify(state));
+      setSaveInfo(t("saveSaved"));
+    } catch {
+      setSaveInfo(t("saveErr"));
+    }
+  }
+
+  function saveSoon() {
+    const key = getSaveKey();
+    if (!key) return;
+    setSaveInfo(t("saveQueued"));
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      save();
+    }, 250);
+  }
+
+  function loadForUser(username) {
+    try {
+      const raw = localStorage.getItem(saveKeyForUser(username));
+      if (!raw) return clone(DEFAULT);
+      const parsed = JSON.parse(raw);
+      return {
+        points: Number(parsed.points) || 0,
+        clickLevel: Number.isFinite(parsed.clickLevel) ? parsed.clickLevel : 0,
+        autoLevel: Number.isFinite(parsed.autoLevel) ? parsed.autoLevel : 0,
+        multLevel: Number.isFinite(parsed.multLevel) ? parsed.multLevel : 0,
+        lastTick: Date.now(),
+        lastSeen: Number(parsed.lastSeen) || Date.now(),
+        lastReadAnnAt: Number(parsed.lastReadAnnAt) || 0
+      };
+    } catch {
+      return clone(DEFAULT);
+    }
+  }
+
+  function applyOfflineEarnings() {
+    const now = Date.now();
+    const last = Number(state.lastSeen) || now;
+    const offlineSeconds = Math.min(MAX_OFFLINE_SECONDS, Math.max(0, (now - last) / 1000));
+    if (offlineSeconds >= 1) {
+      const gain = pps() * offlineSeconds;
+      if (gain > 0) {
+        addPoints(gain);
+        setSaveInfo(`${t("saveOffline")} +${fmt(gain)} (${Math.floor(offlineSeconds)}s)`);
+      }
+    }
+    state.lastTick = now;
+    state.lastSeen = now;
+  }
+
+  // =========================
+  // EXPORT / IMPORT
+  // =========================
+  async function exportSave() {
+    if (!currentUser) return;
+    const payload = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+    try {
+      await navigator.clipboard.writeText(payload);
+      setSaveInfo(t("saveExportedClipboard"));
+    } catch {
+      prompt(lang === "pl" ? "Skopiuj zapis:" : "Copy save:", payload);
+      setSaveInfo(t("saveExported"));
+    }
+  }
+
+  async function importSave() {
+    if (!currentUser) return;
+    let payload = "";
+    try {
+      payload = await navigator.clipboard.readText();
+    } catch {
+      payload = prompt(lang === "pl" ? "Wklej zapis:" : "Paste save:") || "";
+    }
+    payload = payload.trim();
+    if (!payload) return;
+
+    try {
+      const json = decodeURIComponent(escape(atob(payload)));
+      const parsed = JSON.parse(json);
+      const now = Date.now();
+      state = {
+        points: Math.max(0, Number(parsed.points) || 0),
+        clickLevel: Math.max(0, Number(parsed.clickLevel) || 0),
+        autoLevel: Math.max(0, Number(parsed.autoLevel) || 0),
+        multLevel: Math.max(0, Number(parsed.multLevel) || 0),
+        lastTick: now,
+        lastSeen: Number(parsed.lastSeen) || now,
+        lastReadAnnAt: Number(parsed.lastReadAnnAt) || 0
+      };
+      render();
+      saveSoon();
+      setSaveInfo(t("saveImported"));
+      renderAnnouncements();
+    } catch {
+      setSaveInfo(t("saveImportFail"));
+      alert(t("alertImportFail"));
+    }
+  }
+
+  // =========================
+  // ANNOUNCEMENTS (admin add/delete)
+  // =========================
+  function isAdmin() {
+    return currentUser && currentUser === ADMIN_USERNAME;
+  }
+
+  function loadAnnouncements() {
+    try {
+      const raw = localStorage.getItem(ANN_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+  function saveAnnouncements(arr) {
+    const safe = Array.isArray(arr) ? arr.slice(0, ANN_MAX) : [];
+    localStorage.setItem(ANN_KEY, JSON.stringify(safe));
+  }
+  function createAnnId() {
+    const now = Date.now();
+    return now.toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function renderAnnouncements() {
+    const list = loadAnnouncements()
+      .slice()
+      .sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+
+    const lastRead = Number(state.lastReadAnnAt) || 0;
+
+    $("annAddBtn").classList.toggle("hidden", !isAdmin());
+
+    const anyNew = currentUser ? list.some(a => (Number(a.createdAt) || 0) > lastRead) : false;
+    $("annNewBadge").classList.toggle("hidden", !anyNew);
+
+    const wrap = $("annList");
+    if (!list.length) {
+      wrap.innerHTML = `<div class="muted">${escapeHtml(t("noAnnouncements"))}</div>`;
+      return;
+    }
+
+    wrap.innerHTML = "";
+    for (const ann of list.slice(0, 8)) {
+      const createdAt = Number(ann.createdAt) || 0;
+      const isNew = currentUser ? createdAt > lastRead : false;
+
+      const el = document.createElement("div");
+      el.className = "annItem";
+      el.innerHTML = `
+        <div class="annTop">
+          <div class="annTitle">
+            ${isNew ? `<span class="badge new" style="padding:2px 7px; font-size:11px">${escapeHtml(t("annNew"))}</span>` : ""}
+            ${escapeHtml(ann.title || "(no title)")}
+          </div>
+          <div class="annMeta">
+            v${escapeHtml(ann.version || "—")} • ${escapeHtml(fmtDate(createdAt))}
+          </div>
+        </div>
+        <div class="annBody">${escapeHtml(ann.body || "")}</div>
+      `;
+      el.addEventListener("click", () => showAnnView(ann));
+      wrap.appendChild(el);
+    }
+  }
+
+  function showAnnView(ann) {
+    $("annViewMeta").textContent = `${t("versionPrefix")}: ${ann.version || "—"} • ${fmtDate(ann.createdAt)} • ${t("userPrefix")}: ${ann.author || "—"}`;
+    $("annViewTitle").textContent = ann.title || "(no title)";
+    $("annViewBody").textContent = ann.body || "";
+
+    const ov = $("annViewOverlay");
+    ov.dataset.annId = ann.id || "";
+    ov.dataset.annCreatedAt = String(ann.createdAt || 0);
+
+    $("annDeleteBtn").classList.toggle("hidden", !isAdmin());
+    showOverlay("annViewOverlay");
+  }
+
+  function hideAnnView() { hideOverlay("annViewOverlay"); }
+
+  function markReadUpTo(ts) {
+    const tms = Number(ts) || 0;
+    state.lastReadAnnAt = Math.max(Number(state.lastReadAnnAt) || 0, tms);
+    saveSoon();
+    renderAnnouncements();
+  }
+
+  function showAnnAdd() {
+    if (!isAdmin()) return;
+    $("annAddHint").textContent = "";
+    $("annVer").value = "";
+    $("annTitleInput").value = "";
+    $("annBodyInput").value = "";
+    showOverlay("annAddOverlay");
+    $("annVer").focus();
+  }
+  function hideAnnAdd() { hideOverlay("annAddOverlay"); }
+
+  // =========================
+  // GAME LOOP
+  // =========================
+  function click(ev) {
+    if (!currentUser) return;
+    const verdict = antiCheck(ev);
+    if (!verdict.allowed) return;
+
+    const gain = ppc() * verdict.mult;
+    addPoints(gain);
+
+    const rect = $("clickBtn").getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const x = (ev && typeof ev.clientX === "number") ? ev.clientX : cx;
+    const y = (ev && typeof ev.clientY === "number") ? ev.clientY : cy;
+
+    spark("+" + fmt(gain), x, y);
+    render();
+    saveSoon();
+  }
+
+  function buy(kind) {
+    if (!currentUser) return false;
+
+    if (kind === "click") {
+      const c = costClick();
+      if (state.points < c) return false;
+      state.points -= c; state.clickLevel += 1;
+    } else if (kind === "auto") {
+      const c = costAuto();
+      if (state.points < c) return false;
+      state.points -= c; state.autoLevel += 1;
+    } else if (kind === "mult") {
+      const c = costMult();
+      if (state.points < c) return false;
+      state.points -= c; state.multLevel += 1;
+    }
+
+    render();
+    saveSoon();
+    return true;
+  }
+
+  function tick() {
+    if (!currentUser) return;
+    const now = Date.now();
+    const dt = Math.max(0, (now - state.lastTick) / 1000);
+    state.lastTick = now;
+
+    const gain = pps() * dt;
+    if (gain > 0) addPoints(gain);
+
+    render();
+
+    if (now - lastAutoSave > 10000) {
+      lastAutoSave = now;
+      save();
+    }
+  }
+
+  function startTickLoop() {
+    if (tickTimer) clearInterval(tickTimer);
+    tickTimer = setInterval(tick, 100);
+  }
+
+  // =========================
+  // SESSION FLOW
+  // =========================
+  function startGameFor(username) {
+    currentUser = username;
+    setUserInfo();
+    unlockClicks();
+
+    state = loadForUser(username);
+    applyOfflineEarnings();
+
+    render();
+    save();
+    lastAutoSave = Date.now();
+    startTickLoop();
+    hideLogin();
+    document.body.classList.remove("locked");
+    renderAnnouncements();
+  }
+
+  function logout() {
+    save();
+    currentUser = null;
+    setUserInfo();
+    clearAuth();
+    unlockClicks();
+    renderAnnouncements();
+    showLogin();
+  }
+
+  // =========================
+  // EVENTS
+  // =========================
+  $("clickBtn").addEventListener("click", click);
+  $("buyClick").addEventListener("click", () => buy("click"));
+  $("buyAuto").addEventListener("click", () => buy("auto"));
+  $("buyMult").addEventListener("click", () => buy("mult"));
+
+  $("resetBtn").addEventListener("click", () => {
+    if (!currentUser) return;
+    if (!confirm(t("confirmReset"))) return;
+    const keepRead = Number(state.lastReadAnnAt) || 0;
+    state = clone(DEFAULT);
+    state.lastReadAnnAt = keepRead;
+    unlockClicks();
+    render();
+    saveSoon();
+  });
+
+  $("exportBtn").addEventListener("click", exportSave);
+  $("importBtn").addEventListener("click", importSave);
+  $("logoutBtn").addEventListener("click", logout);
+
+  // hotkeys (disabled while typing or any overlay open)
+  window.addEventListener("keydown", (e) => {
+    if (!currentUser) return;
+    if (e.repeat) return;
+    const ae = document.activeElement;
+    if (isTypingTarget(e.target) || isTypingTarget(ae) || anyOverlayOpen()) return;
+
+    if (e.code === "Space") { e.preventDefault(); click(null); }
+    if (e.key === "s" || e.key === "S") {
+      if (!buy("mult")) if (!buy("auto")) buy("click");
+    }
+    if (e.key === "r" || e.key === "R") $("resetBtn").click();
+  });
+
+  // human check
+  $("hcBtn").addEventListener("click", () => {
+    const typed = ($("hcInput").value || "").trim().toUpperCase();
+    if (typed === anti.code) unlockClicks();
+    else $("hcHint").textContent = (lang === "pl" ? "Kod się nie zgadza." : "Code does not match.");
+  });
+  $("hcInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("hcBtn").click();
+  });
+
+  // announcements
+  $("annAddBtn").addEventListener("click", showAnnAdd);
+  $("annAddClose").addEventListener("click", hideAnnAdd);
+  $("annPublishBtn").addEventListener("click", () => {
+    if (!isAdmin()) { $("annAddHint").textContent = (lang === "pl" ? "Brak uprawnień." : "No permission."); return; }
+
+    const version = ($("annVer").value || "").trim();
+    const title = ($("annTitleInput").value || "").trim();
+    const body = ($("annBodyInput").value || "").trim();
+
+    if (!version) { $("annAddHint").textContent = (lang === "pl" ? "Podaj wersję." : "Enter version."); return; }
+    if (!title) { $("annAddHint").textContent = (lang === "pl" ? "Podaj tytuł." : "Enter title."); return; }
+    if (!body) { $("annAddHint").textContent = (lang === "pl" ? "Podaj treść." : "Enter body."); return; }
+
+    const list = loadAnnouncements();
+    const now = Date.now();
+    list.unshift({ id: createAnnId(), version, title, body, createdAt: now, author: currentUser });
+    saveAnnouncements(list);
+
+    // mark own announcement as read
+    state.lastReadAnnAt = Math.max(Number(state.lastReadAnnAt) || 0, now);
+    saveSoon();
+
+    hideAnnAdd();
+    renderAnnouncements();
+  });
+
+  $("annViewClose").addEventListener("click", hideAnnView);
+  $("annMarkReadBtn").addEventListener("click", () => {
+    const ts = Number($("annViewOverlay").dataset.annCreatedAt) || 0;
+    if (ts > 0) markReadUpTo(ts);
+    hideAnnView();
+  });
+  $("annDeleteBtn").addEventListener("click", () => {
+    if (!isAdmin()) return;
+    const id = $("annViewOverlay").dataset.annId || "";
+    if (!id) return;
+    if (!confirm(t("confirmDeleteAnn"))) return;
+
+    const list = loadAnnouncements();
+    saveAnnouncements(list.filter(a => a && a.id !== id));
+    hideAnnView();
+    renderAnnouncements();
+  });
+
+  // language buttons
+  function setLanguage(nextLang) {
+    lang = nextLang;
+    localStorage.setItem(LANG_KEY, lang);
+    applyLang();
+    render();
+    renderAnnouncements();
+  }
+
+  $("langPl").addEventListener("click", () => {
+    setLanguage("pl");
+    hideLangOverlay();
+    if (awaitingLangChoice) {
+      awaitingLangChoice = false;
+      bootAfterLanguage();
+    }
+  });
+  $("langEn").addEventListener("click", () => {
+    setLanguage("en");
+    hideLangOverlay();
+    if (awaitingLangChoice) {
+      awaitingLangChoice = false;
+      bootAfterLanguage();
+    }
+  });
+
+  // open language picker anytime
+  $("langBtn").addEventListener("click", () => showLangOverlay());
+  $("loginLangBtn").addEventListener("click", () => showLangOverlay());
+
+  // login
+  $("loginBtn").addEventListener("click", async () => {
+    const username = normalizeUsername($("loginUser").value);
+    const password = ($("loginPass").value || "");
+
+    if (!username) { $("loginHint").textContent = t("loginNeedUser"); return; }
+    if (username.length < 3) { $("loginHint").textContent = t("loginUserLen"); return; }
+    if (!password || password.length < 4) { $("loginHint").textContent = t("loginPassLen"); return; }
+
+    const accounts = getAccounts();
+    const passHash = await hashPassword(password);
+
+    if (!accounts[username]) {
+      accounts[username] = passHash;
+      setAccounts(accounts);
+      saveAuth(username);
+      $("loginHint").textContent = t("loginCreated");
+      startGameFor(username);
+      return;
+    }
+
+    if (accounts[username] !== passHash) {
+      $("loginHint").textContent = t("loginBadPass");
+      return;
+    }
+
+    saveAuth(username);
+    $("loginHint").textContent = t("loginOk");
+    startGameFor(username);
+  });
+
+  $("loginPass").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("loginBtn").click();
+  });
+  $("loginUser").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("loginBtn").click();
+  });
+
+  $("wipeAccountsBtn").addEventListener("click", () => {
+    if (!confirm(t("confirmWipe"))) return;
+
+    localStorage.removeItem(ACCOUNTS_KEY);
+    localStorage.removeItem(AUTH_KEY);
+
+    // remove all user saves
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(SAVE_KEY_BASE)) keysToRemove.push(k);
+    }
+    for (const k of keysToRemove) localStorage.removeItem(k);
+
+    currentUser = null;
+    setUserInfo();
+    $("loginHint").textContent = (lang === "pl" ? "Wyczyszczono. Możesz założyć nowe konto." : "Cleared. You can create a new account.");
+    showLogin();
+    renderAnnouncements();
+  });
+
+  // =========================
+  // BOOT (this is the fix: language picker truly works)
+  // =========================
+  function bootAfterLanguage() {
+    applyLang();
+    setSaveInfo(t("saveReady"));
+    setAntiInfo(t("antiOk"));
+    render();
+    renderAnnouncements();
+
+    const auth = loadAuth();
+    if (auth && auth.username) startGameFor(auth.username);
+    else showLogin();
+  }
+
+  // 1) decide language:
+  const stored = localStorage.getItem(LANG_KEY);
+  if (stored && (stored === "en" || stored === "pl")) {
+    lang = stored;
+    applyLang();
+    bootAfterLanguage();
+  } else {
+    // default UI in EN, but DO NOT save until user picks
+    lang = "en";
+    applyLang();
+    awaitingLangChoice = true;
+    showLangOverlay();     // user must choose to continue
+    // do not show login yet
+    document.body.classList.add("locked");
+    hideLogin();
+    render();
+    renderAnnouncements();
+  }
+})();
+</script>
+</body>
+</html>
